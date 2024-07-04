@@ -2,14 +2,11 @@ package com.example.exampleworker
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkManager
@@ -20,18 +17,20 @@ import kotlinx.coroutines.withContext
 
 class UploadWorker(appContext: Context, workerParams: WorkerParameters):
     CoroutineWorker(appContext, workerParams) {
-    private val channelId = "CHANNEL_ID"
+    private val channelId = "MyWORK"
     private val notificationId = 1
     private var notificationManager= appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     var count = 0
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun doWork(): Result {
         withContext(Dispatchers.Main){
             Toast.makeText(applicationContext, "Run", Toast.LENGTH_SHORT).show()
         }
 
         while (count < 11){
-            createNotification(count)
+            val process = "process: $count"
+            setForeground(createNotification(process))
             count++
             delay(1000)
         }
@@ -39,10 +38,15 @@ class UploadWorker(appContext: Context, workerParams: WorkerParameters):
         withContext(Dispatchers.Main){
             Toast.makeText(applicationContext, "Complete", Toast.LENGTH_SHORT).show()
         }
+
+        notificationManager.deleteNotificationChannel(channelId)
+
         return Result.success()
     }
 
-    private fun createNotification(counter: Int) {
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun createNotification(counter: String):ForegroundInfo {
         val channel = NotificationChannel(
             channelId,
             "Foreground Service Channel",
@@ -62,6 +66,6 @@ class UploadWorker(appContext: Context, workerParams: WorkerParameters):
             .addAction(android.R.drawable.ic_delete, "Complete", intent)
             .build()
 
-        notificationManager.notify(notificationId, notification)
+       return ForegroundInfo(notificationId, notification)
     }
 }
